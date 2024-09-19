@@ -258,6 +258,34 @@
             justify-content: center;
             margin-top: 20px;
         }
+
+        #tileSetSelector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tileSetRadio {
+            display: none;
+        }
+        .tileSetLabel {
+            display: block;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .tileSetRadio:checked + .tileSetLabel {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #tileSetPreview {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
@@ -268,7 +296,7 @@
                 <p>How many computer opponents?</p>
                 <input type="number" id="opponentInput" min="1" max="3" value="2">
                 <div id="tileSetSelector">
-                    <input type="radio" id="modernTileSet" name="tileSet" value="Modern" class="tileSetRadio" checked>
+                    <input type="radio" id="modernTileSet" name="tileSet" value="Modern" class="tileSetRadio" checked="">
                     <label for="modernTileSet" class="tileSetLabel">Modern</label>
                     <input type="radio" id="1970sTileSet" name="tileSet" value="1970s" class="tileSetRadio">
                     <label for="1970sTileSet" class="tileSetLabel">1970s</label>
@@ -278,8 +306,18 @@
                     <label for="offCenterTileSet" class="tileSetLabel">OffCenter</label>
                     <input type="radio" id="oldAgeTileSet" name="tileSet" value="OldAge" class="tileSetRadio">
                     <label for="oldAgeTileSet" class="tileSetLabel">OldAge</label>
+                    <input type="radio" id="catTileSet" name="tileSet" value="Cat" class="tileSetRadio">
+                    <label for="catTileSet" class="tileSetLabel">Cat</label>
+                    <input type="radio" id="dogTileSet" name="tileSet" value="Dog" class="tileSetRadio">
+                    <label for="dogTileSet" class="tileSetLabel">Dog</label>
+                    <input type="radio" id="beachTileSet" name="tileSet" value="Beach" class="tileSetRadio">
+                    <label for="beachTileSet" class="tileSetLabel">Beach</label>
+                    <input type="radio" id="farmAnimalsTileSet" name="tileSet" value="Farm Animals" class="tileSetRadio">
+                    <label for="farmAnimalsTileSet" class="tileSetLabel">Farm Animals</label>
+                    <input type="radio" id="foodTileSet" name="tileSet" value="Food" class="tileSetRadio">
+                    <label for="foodTileSet" class="tileSetLabel">Food</label>
                 </div>
-                <div id="tileSetPreview"></div>
+                <div id="tileSetPreview"><div class="tile" style="background-color: purple; color: white; font-size: 36px;">7</div><div class="tile" style="background-color: green; color: white; font-size: 36px;">8</div><div class="tile" style="background-color: orange; color: white; font-size: 36px;">9</div><div class="tile" style="background-color: purple; color: white; font-size: 36px;">10</div></div>
                 <button id="startButton">Start Game</button>
             </div>
         </div>
@@ -386,7 +424,7 @@
         const playerNames = ['Brad', 'Ronald', 'Faith', 'Eva', 'James', 'April', 'Zoey', 'Conner', 'Ollie', 'Gavin', 'Daniel', 'Mike', 'Eric', 'Jim', 'Bob', 'Julie', 'Warren', 'Zevon', 'Billy'];
         const emojis = ['🙆‍♀️', '🙎', '🧕', '🧓', '👨‍🦰', '👩‍🦱', '👨‍🦳', '👩‍🦲', '🧔', '👴', '👵', '🧑‍🦱', '🧑‍🦰', '🧑‍🦳', '🧑‍🦲'];
         const colors = ['red', 'blue', 'black', 'orange'];
-        const secondaryColors = ['purple', 'green', 'orange'];
+        const secondaryColors = ['purple', 'green', 'orange', 'brown'];
         const boardBackgrounds = [
             'assets/1.png',
             'assets/2.png',
@@ -596,44 +634,144 @@
             const tileElement = document.createElement('div');
             tileElement.className = 'tile';
             
-            switch(currentTileSet) {
-                case 'Modern':
-                    tileElement.style.backgroundColor = tile.color;
-                    tileElement.style.color = tile.color === 'black' || tile.color === 'blue' ? 'white' : 'black';
-                    tileElement.textContent = tile.color === 'joker' ? '🃏' : tile.number;
-                    break;
-                case '1970s':
-                    tileElement.style.backgroundColor = 'cream';
-                    tileElement.style.color = tile.color;
-                    tileElement.textContent = tile.color === 'joker' ? '🃏' : tile.number;
-                    break;
-                case 'Other Game':
-                    tileElement.style.backgroundColor = 'white';
-                    tileElement.style.color = tile.color;
-                    tileElement.textContent = tile.color === 'joker' ? '🃏' : tile.number;
-                    tileElement.style.borderTop = `3px solid ${tile.color}`;
-                    break;
-                case 'OffCenter':
-                    tileElement.style.backgroundColor = ['red', 'blue', 'green', 'darkgrey'][colors.indexOf(tile.color)];
-                    tileElement.style.color = 'white';
-                    tileElement.textContent = tile.color === 'joker' ? '🃏' : tile.number;
-                    tileElement.style.display = 'flex';
-                    tileElement.style.justifyContent = ['flex-start', 'flex-end'][Math.floor(Math.random() * 2)];
-                    tileElement.style.alignItems = ['flex-start', 'flex-end'][Math.floor(Math.random() * 2)];
-                    tileElement.style.padding = '5px';
-                    break;
-                case 'OldAge':
-                    tileElement.style.backgroundColor = secondaryColors[colors.indexOf(tile.color) % secondaryColors.length];
-                    tileElement.style.color = tileElement.style.backgroundColor === 'yellow' ? 'black' : 'white';
-                    tileElement.textContent = tile.color === 'joker' ? '🃏' : tile.number;
-                    tileElement.style.fontSize = '36px';
-                    break;
+            const tileSetConfigs = {
+                'Modern': {
+                    style: (tile) => ({
+                        backgroundColor: tile.color,
+                        color: tile.color === 'black' || tile.color === 'blue' ? 'white' : 'black',
+                        content: tile.color === 'joker' ? '🃏' : tile.number
+                    })
+                },
+                '1970s': {
+                    style: (tile) => ({
+                        backgroundColor: 'cream',
+                        color: tile.color,
+                        content: tile.color === 'joker' ? '🃏' : tile.number
+                    })
+                },
+                'Other Game': {
+                    style: (tile) => ({
+                        backgroundColor: 'white',
+                        color: tile.color,
+                        content: tile.color === 'joker' ? '🃏' : tile.number,
+                        borderTop: `3px solid ${tile.color}`
+                    })
+                },
+                'OffCenter': {
+                    style: (tile) => ({
+                        backgroundColor: ['red', 'blue', 'green', 'darkgrey'][colors.indexOf(tile.color)],
+                        color: 'white',
+                        content: tile.color === 'joker' ? '🃏' : tile.number,
+                        display: 'flex',
+                        justifyContent: ['flex-start', 'flex-end'][Math.floor(Math.random() * 2)],
+                        alignItems: ['flex-start', 'flex-end'][Math.floor(Math.random() * 2)],
+                        padding: '5px'
+                    })
+                },
+                'OldAge': {
+                    style: (tile) => ({
+                        backgroundColor: secondaryColors[colors.indexOf(tile.color) % secondaryColors.length],
+                        color: secondaryColors[colors.indexOf(tile.color) % secondaryColors.length] === 'yellow' ? 'black' : 'white',
+                        content: tile.color === 'joker' ? '🃏' : tile.number,
+                        fontSize: '36px'
+                    })
+                },
+                'Cat': {
+                    style: (tile) => ({
+                        backgroundColor: '#FFE4B5',
+                        color: '#8B4513',
+                        content: ['😺', '😸', '😹', '😻'][colors.indexOf(tile.color)],
+                        numberPosition: 'bottom-right'
+                    })
+                },
+                'Dog': {
+                    style: (tile) => ({
+                        backgroundColor: '#E6E6FA',
+                        color: '#4B0082',
+                        content: ['🐶', '🐕', '🦮', '🐩'][colors.indexOf(tile.color)],
+                        numberPosition: 'top-left'
+                    })
+                },
+                'Beach': {
+                    style: (tile) => ({
+                        backgroundColor: '#87CEEB',
+                        color: '#000080',
+                        content: ['🏖️', '🌊', '🐚', '🌴'][colors.indexOf(tile.color)],
+                        numberPosition: 'bottom-left'
+                    })
+                },
+                'Farm Animals': {
+                    style: (tile) => ({
+                        backgroundColor: '#F0E68C',
+                        color: '#8B4513',
+                        content: ['🐮', '🐷', '🐔', '🐑'][colors.indexOf(tile.color)],
+                        numberPosition: 'top-right'
+                    })
+                },
+                'Food': {
+                    style: (tile) => ({
+                        backgroundColor: '#FAFAD2',
+                        color: '#8B0000',
+                        content: ['🍎', '🍌', '🍇', '🍊'][colors.indexOf(tile.color)],
+                        numberPosition: 'bottom-left'
+                    })
+                }
+            };
+
+            const tileStyle = tileSetConfigs[currentTileSet].style(tile);
+
+            Object.assign(tileElement.style, tileStyle);
+            if (tileStyle.content) {
+                if (currentTileSet === 'Modern' || currentTileSet === '1970s' || currentTileSet === 'Other Game' || currentTileSet === 'OffCenter' || currentTileSet === 'OldAge') {
+                    tileElement.textContent = tileStyle.content;
+                } else {
+                    const emojiSpan = document.createElement('span');
+                    emojiSpan.textContent = tileStyle.content;
+                    emojiSpan.style.position = 'absolute';
+                    emojiSpan.style.fontSize = '24px';
+                    
+                    const numberSpan = document.createElement('span');
+                    numberSpan.textContent = tile.color === 'joker' ? '' : tile.number;
+                    numberSpan.style.position = 'absolute';
+                    numberSpan.style.fontSize = '16px';
+
+                    switch (tileStyle.numberPosition) {
+                        case 'top-left':
+                            emojiSpan.style.bottom = '5px';
+                            emojiSpan.style.right = '5px';
+                            numberSpan.style.top = '5px';
+                            numberSpan.style.left = '5px';
+                            break;
+                        case 'top-right':
+                            emojiSpan.style.bottom = '5px';
+                            emojiSpan.style.left = '5px';
+                            numberSpan.style.top = '5px';
+                            numberSpan.style.right = '5px';
+                            break;
+                        case 'bottom-left':
+                            emojiSpan.style.top = '5px';
+                            emojiSpan.style.right = '5px';
+                            numberSpan.style.bottom = '5px';
+                            numberSpan.style.left = '5px';
+                            break;
+                        case 'bottom-right':
+                            emojiSpan.style.top = '5px';
+                            emojiSpan.style.left = '5px';
+                            numberSpan.style.bottom = '5px';
+                            numberSpan.style.right = '5px';
+                            break;
+                    }
+
+                    tileElement.appendChild(emojiSpan);
+                    tileElement.appendChild(numberSpan);
+                }
             }
 
             if (isSplit) {
                 tileElement.classList.add('split');
                 tileElement.style.setProperty('--tile-color', tile.color);
             }
+
             return tileElement;
         }
 
