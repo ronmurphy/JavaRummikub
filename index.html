@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rummikub Challenge</title>
+    <meta name="description" content="Play Rummikub against computer opponents in this interactive online game. Drag, zoom, and strategize your way to victory!">
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        #gameContainer {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        #setupScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #setupBox {
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        #opponentInput {
+            margin: 10px 0;
+            padding: 5px;
+        }
+        #startButton {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #playerBar {
+            display: flex;
+            justify-content: space-around;
+            padding: 10px;
+            background-color: #333;
+            color: white;
+        }
+        .player {
+            text-align: center;
+            position: relative;
+            cursor: pointer;
+        }
+        .player.current::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            left: -5px;
+            right: -5px;
+            bottom: -5px;
+            border: 3px solid #FFD700;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .emoji {
+            font-size: 24px;
+        }
+        .name {
+            font-weight: bold;
+        }
+        .score {
+            font-size: 14px;
+        }
+        #gameBoard {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+        }
+        #tileBoard {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-size: cover;
+            border: 2px solid #442211;
+        }
+        .board-cell {
+            border: 1px solid rgba(255, 255, 255, 0.5) !important;
+        }
+        #playerDock {
+            height: 100px;
+            background-color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: auto;
+        }
+        .tile {
+            width: 40px;
+            height: 60px;
+            background-color: #f9f9f9;
+            border: 1px solid #333;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0 2px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .tile.selected {
+            transform: translateY(-10px) scale(1.2);
+        }
+        .tile::after {
+            content: '';
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 12px;
+            height: 12px;
+            font-size: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .tile.show-hint::after {
+            content: var(--hint-icon);
+        }
+        .tile.highlight {
+            box-shadow: 0 0 0 2px white;
+        }
+        .tile.split {
+            background-image: linear-gradient(to bottom, var(--tile-color), purple);
+        }
+        #controlButtons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            z-index: 1001;
+        }
+        .controlButton {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 10px;
+            font-size: 24px;
+            background-color: #fff;
+            border: 1px solid #333;
+            border-radius: 0;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #helpModal, #hintModal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 600px;
+        }
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        #notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            display: none;
+            z-index: 1002;
+        }
+        .tutorial-tile {
+            width: 40px;
+            height: 60px;
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0 2px;
+            border: 1px solid #333;
+            border-radius: 5px;
+        }
+        .tutorial-section {
+            margin-bottom: 20px;
+        }
+        .tutorial-example {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        #tileSetSelector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .tileSetRadio {
+            display: none;
+        }
+        .tileSetLabel {
+            display: block;
+            padding: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .tileSetRadio:checked + .tileSetLabel {
+            background-color: #4CAF50;
+            color: white;
+        }
+        #tileSetPreview {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="setupScreen">
+            <div id="setupBox">
+                <h2>Rummikub Challenge</h2>
+                <p>How many computer opponents?</p>
+                <input type="number" id="opponentInput" min="1" max="3" value="2">
+                <div id="tileSetSelector">
+                    <input type="radio" id="modernTileSet" name="tileSet" value="Modern" class="tileSetRadio" checked>
+                    <label for="modernTileSet" class="tileSetLabel">Modern</label>
+                    <input type="radio" id="1970sTileSet" name="tileSet" value="1970s" class="tileSetRadio">
+                    <label for="1970sTileSet" class="tileSetLabel">1970s</label>
+                    <input type="radio" id="otherGameTileSet" name="tileSet" value="Other Game" class="tileSetRadio">
+                    <label for="otherGameTileSet" class="tileSetLabel">Other Game</label>
+                    <input type="radio" id="offCenterTileSet" name="tileSet" value="OffCenter" class="tileSetRadio">
+                    <label for="offCenterTileSet" class="tileSetLabel">OffCenter</label>
+                    <input type="radio" id="oldAgeTileSet" name="tileSet" value="OldAge" class="tileSetRadio">
+                    <label for="oldAgeTileSet" class="tileSetLabel">OldAge</label>
+                </div>
+                <div id="tileSetPreview"></div>
+                <button id="startButton">Start Game</button>
+            </div>
+        </div>
+        <div id="playerBar"></div>
+        <div id="gameBoard">
+            <div id="tileBoard"></div>
+        </div>
+        <div id="playerDock"></div>
+        <div id="controlButtons">
+            <button class="controlButton" id="helpButton">❓</button>
+            <button class="controlButton" id="hintButton">💡</button>
+            <button class="controlButton" id="endTurnButton">✅</button>
+            <button class="controlButton" id="sortButton">📗</button>
+        </div>
+    </div>
+
+    <div id="helpModal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>How to Play Rummikub</h2>
+            <div class="tutorial-section">
+                <h3>Game Components</h3>
+                <p>Rummikub is played with:</p>
+                <ul>
+                    <li>106 tiles (104 number tiles and 2 jokers)</li>
+                    <li>4 racks for holding tiles</li>
+                </ul>
+            </div>
+            <div class="tutorial-section">
+                <h3>Setup</h3>
+                <p>Each player draws 14 tiles to start. The remaining tiles form the pool.</p>
+            </div>
+            <div class="tutorial-section">
+                <h3>Gameplay</h3>
+                <ol>
+                    <li><strong>Initial Meld:</strong> To start playing, you must place tiles on the table with a total value of at least 30 points.</li>
+                    <li><strong>Forming Sets:</strong> There are two types of sets:
+                        <ul>
+                            <li>Groups: 3 or 4 tiles of the same number in different colors</li>
+                            <li>Runs: 3 or more consecutive numbers of the same color</li>
+                        </ul>
+                    </li>
+                    <li><strong>Manipulating the Table:</strong> After your initial meld, you can add to existing sets, split them, or create new ones using tiles from your rack and the table.</li>
+                    <li><strong>Jokers:</strong> Jokers can be used as any tile. They can be replaced by the tile they represent, allowing you to use the joker in a new set.</li>
+                    <li><strong>Drawing Tiles:</strong> If you cannot play any tiles, you must draw one tile from the pool and end your turn.</li>
+                </ol>
+            </div>
+            <div class="tutorial-section">
+                <h3>Examples</h3>
+                <p><strong>Group Example:</strong></p>
+                <div class="tutorial-example">
+                    <div class="tutorial-tile" style="background-color: red; color: white;">7</div>
+                    <div class="tutorial-tile" style="background-color: blue; color: white;">7</div>
+                    <div class="tutorial-tile" style="background-color: black; color: white;">7</div>
+                    <div class="tutorial-tile" style="background-color: orange;">7</div>
+                </div>
+                <p><strong>Run Example:</strong></p>
+                <div class="tutorial-example">
+                    <div class="tutorial-tile" style="background-color: blue; color: white;">3</div>
+                    <div class="tutorial-tile" style="background-color: blue; color: white;">4</div>
+                    <div class="tutorial-tile" style="background-color: blue; color: white;">5</div>
+                    <div class="tutorial-tile" style="background-color: blue; color: white;">6</div>
+                </div>
+            </div>
+            <div class="tutorial-section">
+                <h3>Splitting Tiles</h3>
+                <p>When you split a set, the split tile will be highlighted with a purple gradient:</p>
+                <div class="tutorial-example">
+                    <div class="tutorial-tile" style="background-color: red; color: white;">5</div>
+                    <div class="tutorial-tile" style="background-image: linear-gradient(to bottom, red, purple); color: white;">6</div>
+                    <div class="tutorial-tile" style="background-color: red; color: white;">7</div>
+                </div>
+                <p>This helps you keep track of which tiles have been manipulated during your turn.</p>
+            </div>
+            <div class="tutorial-section">
+                <h3>Controls</h3>
+                <ul>
+                    <li><strong>❓</strong>: Show this help screen</li>
+                    <li><strong>💡</strong>: Get a hint for possible moves</li>
+                    <li><strong>✅</strong>: End your turn</li>
+                    <li><strong>📗/📘/📙</strong>: Sort your tiles (color/value/original)</li>
+                </ul>
+            </div>
+            <div class="tutorial-section">
+                <h3>Winning</h3>
+                <p>The first player to use all their tiles wins the game!</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="hintModal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Hint</h2>
+            <p>Here's a suggestion for your next move:</p>
+            <div id="hintContent"></div>
+        </div>
+    </div>
+
+    <div id="notification"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/hammer.js/2.0.8/hammer.min.js"></script>
+    <script>
+        const playerNames = ['Brad', 'Ronald', 'Faith', 'Eva', 'James', 'April', 'Zoey', 'Conner', 'Ollie', 'Gavin', 'Daniel', 'Mike', 'Eric', 'Jim', 'Bob', 'Julie', 'Warren', 'Zevon', 'Billy'];
+        const emojis = ['🙆‍♀️', '🙎', '🧕', '🧓', '👨‍🦰', '👩‍🦱', '👨‍🦳', '👩‍🦲', '🧔', '👴', '👵', '🧑‍🦱', '🧑‍🦰', '🧑‍🦳', '🧑‍🦲'];
+        const colors = ['red', 'blue', 'black', 'orange'];
+        const secondaryColors = ['purple', 'green', 'orange'];
+        const boardBackgrounds = [
+            'assets/1.png',
+            'assets/2.png',
+            'assets/3.png',
+            'assets/4.png',
+            'assets/5.png',
+            'assets/6.png'
+        ];
+        let currentBackgroundIndex = 0;
+        let players = [];
+        let currentPlayer = 0;
+        let tiles = [];
+        let boardTiles = [];
+        let selectedTiles = [];
+        let currentTileSet = 'Modern';
+        let sortOrder = 'color';
+        let playerMadeInitialMeld = false;
+        let lastSortTime = 0;
+        let boardStateBeforeTurn = [];
+        const SORT_DELAY = 300; // 300 milliseconds delay
+
+        const gameContainer = document.getElementById('gameContainer');
+        const setupScreen = document.getElementById('setupScreen');
+        const opponentInput = document.getElementById('opponentInput');
+        const startButton = document.getElementById('startButton');
+        const playerBar = document.getElementById('playerBar');
+        const tileBoard = document.getElementById('tileBoard');
+        const playerDock = document.getElementById('playerDock');
+        const helpButton = document.getElementById('helpButton');
+        const hintButton = document.getElementById('hintButton');
+        const endTurnButton = document.getElementById('endTurnButton');
+        const sortButton = document.getElementById('sortButton');
+        const helpModal = document.getElementById('helpModal');
+        const hintModal = document.getElementById('hintModal');
+        const closeButtons = document.getElementsByClassName('close');
+        const notification = document.getElementById('notification');
+        const tileSetRadios = document.querySelectorAll('input[name="tileSet"]');
+        const tileSetPreview = document.getElementById('tileSetPreview');
+
+        startButton.addEventListener('click', startGame);
+        helpButton.addEventListener('click', showHelp);
+        hintButton.addEventListener('click', showHint);
+        endTurnButton.addEventListener('click', endTurn);
+        sortButton.addEventListener('click', sortTiles);
+
+        for (let i = 0; i < closeButtons.length; i++) {
+            closeButtons[i].addEventListener('click', function() {
+                helpModal.style.display = 'none';
+                hintModal.style.display = 'none';
+            });
+        }
+
+        window.addEventListener('click', function(event) {
+            if (event.target == helpModal) {
+                helpModal.style.display = 'none';
+            }
+            if (event.target == hintModal) {
+                hintModal.style.display = 'none';
+            }
+        });
+
+        tileSetRadios.forEach(radio => {
+            radio.addEventListener('change', updateTileSetPreview);
+        });
+
+        function startGame() {
+            const numberOfOpponents = parseInt(opponentInput.value);
+            currentTileSet = document.querySelector('input[name="tileSet"]:checked').value;
+            setupPlayers(numberOfOpponents);
+            setupTiles();
+            dealTiles();
+            updatePlayerBar();
+            setupBoard();
+            setupPlayerDock();
+            playerMadeInitialMeld = false;
+            setupScreen.style.display = 'none';
+            startPlayerTurn();
+        }
+
+        function setupPlayers(numberOfOpponents) {
+            players = [
+                { name: 'You', emoji: getRandomEmoji(), score: 0, tiles: [], madeInitialMeld: false }
+            ];
+            for (let i = 0; i < numberOfOpponents; i++) {
+                players.push({
+                    name: getRandomName(),
+                    emoji: getRandomEmoji(),
+                    score: 0,
+                    tiles: [],
+                    madeInitialMeld: false
+                });
+            }
+        }
+
+        function getRandomName() {
+            return playerNames[Math.floor(Math.random() * playerNames.length)];
+        }
+
+        function getRandomEmoji() {
+            return emojis[Math.floor(Math.random() * emojis.length)];
+        }
+
+        function setupTiles() {
+            tiles = [];
+            for (let color of colors) {
+                for (let i = 1; i <= 13; i++) {
+                    tiles.push({ color, number: i });
+                    tiles.push({ color, number: i });
+                }
+            }
+            tiles.push({ color: 'joker', number: 0 });
+            tiles.push({ color: 'joker', number: 0 });
+            shuffleTiles(tiles);
+        }
+
+        function shuffleTiles(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function dealTiles() {
+            for (let player of players) {
+                player.tiles = tiles.splice(0, 14);
+            }
+        }
+
+        function updatePlayerBar() {
+            playerBar.innerHTML = '';
+            for (let i = 0; i < players.length; i++) {
+                const player = players[i];
+                const playerElement = document.createElement('div');
+                playerElement.className = 'player';
+                if (i === currentPlayer) {
+                    playerElement.classList.add('current');
+                }
+                playerElement.innerHTML = `
+                    <div class="emoji">${player.emoji}</div>
+                    <div class="name">${player.name}</div>
+                    <div class="score">Score: ${player.score}</div>
+                `;
+                playerElement.addEventListener('click', () => cycleBoardBackground());
+                playerBar.appendChild(playerElement);
+            }
+        }
+
+        function setupBoard() {
+            const boardSize = 20;
+            currentBackgroundIndex = Math.floor(Math.random() * boardBackgrounds.length);
+            tileBoard.style.backgroundImage = `url(${boardBackgrounds[currentBackgroundIndex]})`;
+            tileBoard.style.backgroundSize = 'cover';
+            
+            for (let i = 0; i < boardSize; i++) {
+                for (let j = 0; j < boardSize; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'board-cell';
+                    cell.style.width = '40px';
+                    cell.style.height = '60px';
+                    cell.style.position = 'absolute';
+                    cell.style.left = `${j * 42}px`;
+                    cell.style.top = `${i * 62}px`;
+                    cell.addEventListener('click', () => placeTile(i, j));
+                    tileBoard.appendChild(cell);
+                }
+            }
+            
+            tileBoard.style.width = `${boardSize * 42}px`;
+            tileBoard.style.height = `${boardSize * 62}px`;
+
+            const hammer = new Hammer(tileBoard);
+            hammer.get('pinch').set({ enable: true });
+
+            let currentScale = 1;
+
+            hammer.on('pinch', (ev) => {
+                currentScale = Math.max(0.5, Math.min(2, currentScale * ev.scale));
+                updateBoardTransform();
+            });
+
+            function updateBoardTransform() {
+                tileBoard.style.transform = `translate(-50%, -50%) scale(${currentScale})`;
+            }
+        }
+
+        function setupPlayerDock() {
+            updatePlayerDock();
+        }
+
+        function startPlayerTurn() {
+            boardStateBeforeTurn = JSON.parse(JSON.stringify(boardTiles));
+            selectedTiles = [];
+            updatePlayerDock();
+            updatePlayerBar();
+        }
+
+        function updatePlayerDock() {
+            playerDock.innerHTML = '';
+            for (let tile of players[0].tiles) {
+                const tileElement = createTileElement(tile);
+                tileElement.addEventListener('click', () => selectTile(tileElement, tile));
+                playerDock.appendChild(tileElement);
+            }
+        }
+
+        function createTileElement(tile, isSplit = false) {
+            const tileElement = document.createElement('div');
+            tileElement.className = 'tile';
+            
+            switch(currentTileSet) {
+                case 'Modern':
+                    tileElement.style.backgroundColor = tile.color;
+                    tileElement.style.color = tile.color === 'black' || tile.color === 'blue' ? 'white' : 'black';
+                    tileElement.textContent = tile.color === 'joker' ? '🃏' : tile.number;
+                    break;
+                case '1970s':
+                    tileElement.style.backgroundColor = 'cream';
+                    tileElement.style.color = tile.color;
+                    tileElement.textContent = tile.color === 'joker' ? '🃏' : tile.number;
+                    break;
+                case 'Other Game':
+                    tileElement.style.backgroundColor = 'white';
+                    tileElement.style.color = tile.color;
+                    tileElement.textContent = tile.color === 'joker' ? '🃏' : tile.number;
+                    tileElement.style.borderTop = `3px solid ${tile.color}`;
+                    break;
+                case 'OffCenter':
+                    tileElement.style.backgroundColor = ['red', 'blue', 'green', 'darkgrey'][colors.indexOf(tile.color)];
+                    tileElement.style.color = 'white';
+                    tileElement.textContent = tile.color === 'joker' ? '🃏' : tile.number;
+                    tileElement.style.display = 'flex';
+                    tileElement.style.justifyContent = ['flex-start', 'flex-end'][Math.floor(Math.random() * 2)];
+                    tileElement.style.alignItems = ['flex-start', 'flex-end'][Math.floor(Math.random() * 2)];
+                    tileElement.style.padding = '5px';
+                    break;
+                case 'OldAge':
+                    tileElement.style.backgroundColor = secondaryColors[colors.indexOf(tile.color) % secondaryColors.length];
+                    tileElement.style.color = tileElement.style.backgroundColor === 'yellow' ? 'black' : 'white';
+                    tileElement.textContent = tile.color === 'joker' ? '🃏' : tile.number;
+                    tileElement.style.fontSize = '36px';
+                    break;
+            }
+
+            if (isSplit) {
+                tileElement.classList.add('split');
+                tileElement.style.setProperty('--tile-color', tile.color);
+            }
+            return tileElement;
+        }
+
+        function selectTile(tileElement, tile) {
+            const index = selectedTiles.findIndex(t => t === tile);
+            if (index === -1) {
+                selectedTiles.push(tile);
+                tileElement.classList.add('selected');
+            } else {
+                selectedTiles.splice(index, 1);
+                tileElement.classList.remove('selected');
+            }
+        }
+
+        function placeTile(row, col) {
+            if (selectedTiles.length === 0) return;
+
+            const tile = selectedTiles[0];
+            const tileElement = createTileElement(tile);
+            tileElement.style.position = 'absolute';
+            tileElement.style.left = `${col * 42}px`;
+            tileElement.style.top = `${row * 62}px`;
+
+            const existingTile = boardTiles.find(bt => bt.row === row && bt.col === col);
+            if (existingTile) {
+                const splitTile = createTileElement(existingTile.tile, true);
+                splitTile.style.position = 'absolute';
+                splitTile.style.left = `${col * 42}px`;
+                splitTile.style.top = `${(row + 1) * 62}px`;
+                tileBoard.appendChild(splitTile);
+                boardTiles.push({ tile: existingTile.tile, row: row + 1, col: col, split: true });
+            }
+
+            tileBoard.appendChild(tileElement);
+            boardTiles.push({ tile, row, col });
+
+            const index = players[0].tiles.findIndex(t => t === tile);
+            players[0].tiles.splice(index, 1);
+            selectedTiles.splice(0, 1);
+
+            updatePlayerDock();
+        }
+
+        function showHelp() {
+            helpModal.style.display = 'block';
+        }
+
+        let hintButtonPressTimer;
+
+        hintButton.addEventListener('mousedown', function() {
+            hintButtonPressTimer = setTimeout(cycleBoardBackground, 1000);
+        });
+
+        hintButton.addEventListener('mouseup', function() {
+            clearTimeout(hintButtonPressTimer);
+        });
+
+        hintButton.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            hintButtonPressTimer = setTimeout(cycleBoardBackground, 1000);
+        });
+
+        hintButton.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            clearTimeout(hintButtonPressTimer);
+            if (e.cancelable) {
+                e.preventDefault();
+            }
+            showHint();
+        });
+
+        function cycleBoardBackground() {
+            currentBackgroundIndex = (currentBackgroundIndex + 1) % boardBackgrounds.length;
+            tileBoard.style.backgroundImage = `url(${boardBackgrounds[currentBackgroundIndex]})`;
+        }
+
+        function showHint() {
+            const possiblePlays = findPossiblePlays();
+            if (possiblePlays.length > 0) {
+                possiblePlays.forEach(tile => {
+                    const tileElement = playerDock.querySelector(`.tile:nth-child(${players[0].tiles.indexOf(tile) + 1})`);
+                    tileElement.classList.add('highlight');
+                    setTimeout(() => {
+                        tileElement.classList.remove('highlight');
+                    }, 3000);
+                });
+            } else {
+                showNotification("No possible plays available at the moment. 😬");
+            }
+        }
+
+        function findPossiblePlays() {
+            const playerTiles = players[0].tiles;
+            const allTiles = [...playerTiles, ...boardTiles.map(bt => bt.tile)];
+            const possiblePlays = [];
+
+            function isValidSet(tiles) {
+                if (tiles.length < 3) return false;
+                
+                // Check for group (same number, different colors)
+                if (tiles.every(t => t.number === tiles[0].number)) {
+                    return new Set(tiles.map(t => t.color)).size === tiles.length;
+                }
+                
+                // Check for run (same color, consecutive numbers)
+                if (tiles.every(t => t.color === tiles[0].color)) {
+                    const sortedNumbers = tiles.map(t => t.number).sort((a, b) => a - b);
+                    for (let i = 1; i < sortedNumbers.length; i++) {
+                        if (sortedNumbers[i] !== sortedNumbers[i-1] + 1) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }
+                
+                return false;
+            }
+
+            // Check for groups and runs in player's hand
+            for (let i = 0; i < playerTiles.length; i++) {
+                for (let j = i + 1; j < playerTiles.length; j++) {
+                    for (let k = j + 1; k < playerTiles.length; k++) {
+                        const set = [playerTiles[i], playerTiles[j], playerTiles[k]];
+                        if (isValidSet(set)) {
+                            possiblePlays.push(...set);
+                        }
+                    }
+                }
+            }
+
+            // Check for adding to existing sets on the board
+            for (let i = 0; i < playerTiles.length; i++) {
+                const tile = playerTiles[i];
+                for (let j = 0; j < boardTiles.length; j++) {
+                    const boardTile = boardTiles[j];
+                    if (canAddToSet(tile, boardTile.tile)) {
+                        possiblePlays.push(tile);
+                    }
+                }
+            }
+
+            // If it's the initial meld, filter for plays that total 30 or more points
+            if (!playerMadeInitialMeld) {
+                const validInitialPlays = [];
+                for (let i = 0; i < possiblePlays.length; i++) {
+                    for (let j = i + 1; j < possiblePlays.length; j++) {
+                        for (let k = j + 1; k < possiblePlays.length; k++) {
+                            const play = [possiblePlays[i], possiblePlays[j], possiblePlays[k]];
+                            if (isValidSet(play) && calculatePoints(play) >= 30) {
+                                validInitialPlays.push(...play);
+                            }
+                        }
+                    }
+                }
+                return [...new Set(validInitialPlays)];
+            }
+
+            return [...new Set(possiblePlays)];
+        }
+
+        function canAddToSet(tile, boardTile) {
+            // Check if tile can be added to a group
+            if (tile.number === boardTile.number && tile.color !== boardTile.color) {
+                return true;
+            }
+            
+            // Check if tile can be added to a run
+            if (tile.color === boardTile.color && 
+                (tile.number === boardTile.number + 1 || tile.number === boardTile.number - 1)) {
+                return true;
+            }
+            
+            return false;
+        }
+
+        function endTurn() {
+            if (selectedTiles.length > 0) {
+                if (checkValidMove()) {
+                    placeTilesOnBoard();
+                    if (!playerMadeInitialMeld) {
+                        playerMadeInitialMeld = true;
+                    }
+                    updateScore();
+                    currentPlayer = (currentPlayer + 1) % players.length;
+                    updatePlayerBar();
+                    selectedTiles = []; // Clear selected tiles
+                    if (currentPlayer !== 0) {
+                        setTimeout(computerTurn, 1000);
+                    } else {
+                        startPlayerTurn();
+                    }
+                } else {
+                    resetBoardToStartOfTurn();
+                    showNotification("Not a valid move. The board has been reset to the start of your turn.");
+                }
+            } else if (!playerMadeInitialMeld) {
+                drawTile(players[0]);
+                showNotification("You haven't made your initial meld yet. You drew a tile and ended your turn.");
+                currentPlayer = (currentPlayer + 1) % players.length;
+                updatePlayerBar();
+                if (currentPlayer !== 0) {
+                    setTimeout(computerTurn, 1000);
+                } else {
+                    startPlayerTurn();
+                }
+            } else {
+                // Player has made initial meld but didn't play any tiles this turn
+                const possiblePlays = findPossiblePlays();
+                if (possiblePlays.length === 0) {
+                    drawTile(players[0]);
+                    showNotification("No possible moves. You drew a tile and ended your turn.");
+                    currentPlayer = (currentPlayer + 1) % players.length;
+                    updatePlayerBar();
+                    if (currentPlayer !== 0) {
+                        setTimeout(computerTurn, 1000);
+                    } else {
+                        startPlayerTurn();
+                    }
+                } else {
+                    showNotification("You have possible moves. Please make a move or rearrange the board before ending your turn.");
+                }
+            }
+            updatePlayerDock();
+        }
+
+        function resetBoardToStartOfTurn() {
+            boardTiles = JSON.parse(JSON.stringify(boardStateBeforeTurn));
+            players[currentPlayer].tiles = players[currentPlayer].tiles.concat(selectedTiles);
+            selectedTiles = [];
+            updateBoard();
+            updatePlayerDock();
+        }
+
+        function drawTile(player) {
+            if (tiles.length > 0) {
+                const newTile = tiles.pop();
+                player.tiles.push(newTile);
+                if (player === players[0]) {
+                    updatePlayerDock();
+                }
+            }
+        }
+
+        function showNotification(message) {
+            notification.textContent = message;
+            notification.style.display = 'block';
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+
+        function computerTurn() {
+            const currentComputerPlayer = players[currentPlayer];
+            let validMove = false;
+
+            if (!currentComputerPlayer.madeInitialMeld) {
+                validMove = makeComputerInitialMeld(currentComputerPlayer);
+            } else {
+                validMove = makeComputerMove(currentComputerPlayer);
+            }
+
+            if (!validMove) {
+                drawTile(currentComputerPlayer);
+                showNotification(`${currentComputerPlayer.emoji} ${currentComputerPlayer.name} drew a tile.`);
+            }
+
+            updateScore();
+            currentPlayer = (currentPlayer + 1) % players.length;
+            updatePlayerBar();
+
+            if (currentPlayer !== 0) {
+                setTimeout(computerTurn, 1000);
+            } else {
+                startPlayerTurn();
+            }
+        }
+
+        function makeComputerInitialMeld(player) {
+            const possibleMelds = findComputerInitialMelds(player);
+            
+            if (possibleMelds.length > 0) {
+                const meld = possibleMelds[Math.floor(Math.random() * possibleMelds.length)];
+                placeTilesOnBoard(meld, player);
+                player.madeInitialMeld = true;
+                showNotification(`${player.emoji} ${player.name} made their initial meld.`);
+                return true;
+            }
+            
+            return false;
+        }
+
+        function findComputerInitialMelds(player) {
+            const possibleMelds = [];
+            const playerTiles = player.tiles;
+
+            // Check for groups
+            for (let i = 0; i < playerTiles.length - 2; i++) {
+                for (let j = i + 1; j < playerTiles.length - 1; j++) {
+                    for (let k = j + 1; k < playerTiles.length; k++) {
+                        const meld = [playerTiles[i], playerTiles[j], playerTiles[k]];
+                        if (isValidSet(meld) && calculatePoints(meld) >= 30) {
+                            possibleMelds.push(meld);
+                        }
+                    }
+                }
+            }
+
+            // Check for runs
+            for (let color of colors) {
+                const colorTiles = playerTiles.filter(t => t.color === color).sort((a, b) => a.number - b.number);
+                for (let i = 0; i < colorTiles.length - 2; i++) {
+                    for (let j = i + 2; j < colorTiles.length; j++) {
+                        const meld = colorTiles.slice(i, j + 1);
+                        if (isValidSet(meld) && calculatePoints(meld) >= 30) {
+                            possibleMelds.push(meld);
+                        }
+                    }
+                }
+            }
+
+            return possibleMelds;
+        }
+
+        function makeComputerMove(player) {
+            const possibleMoves = findComputerMoves(player);
+            
+            if (possibleMoves.length > 0) {
+                const move = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                placeTilesOnBoard(move, player);
+                showNotification(`${player.emoji} ${player.name} placed ${move.length} tile${move.length > 1 ? 's' : ''}.`);
+                return true;
+            }
+            
+            return false;
+        }
+
+        function findComputerMoves(player) {
+            const possibleMoves = [];
+            const playerTiles = player.tiles;
+            
+            // Check for new sets
+            for (let i = 0; i < playerTiles.length - 2; i++) {
+                for (let j = i + 1; j < playerTiles.length - 1; j++) {
+                    for (let k = j + 1; k < playerTiles.length; k++) {
+                        const set = [playerTiles[i], playerTiles[j], playerTiles[k]];
+                        if (isValidSet(set)) {
+                            possibleMoves.push(set);
+                        }
+                    }
+                }
+            }
+            
+            // Check for adding to existing sets on the board
+            for (let i = 0; i < playerTiles.length; i++) {
+                const tile = playerTiles[i];
+                for (let j = 0; j < boardTiles.length; j++) {
+                    const boardTile = boardTiles[j];
+                    if (canAddToSet(tile, boardTile.tile)) {
+                        possibleMoves.push([tile]);
+                    }
+                }
+            }
+            
+            return possibleMoves;
+        }
+
+        function updateBoard() {
+            tileBoard.querySelectorAll('.tile').forEach(el => el.remove());
+            
+            boardTiles.forEach(bt => {
+                const tileElement = createTileElement(bt.tile, bt.split);
+                tileElement.style.position = 'absolute';
+                tileElement.style.left = `${bt.col * 42}px`;
+                tileElement.style.top = `${bt.row * 62}px`;
+                tileBoard.appendChild(tileElement);
+            });
+        }
+
+        function checkValidMove() {
+            if (!playerMadeInitialMeld) {
+                const totalPoints = selectedTiles.reduce((sum, tile) => sum + tile.number, 0);
+                const newSets = findNewSets();
+                const allSetsValid = newSets.every(set => isValidSet(set));
+                return totalPoints >= 30 && allSetsValid;
+            }
+
+            const newSets = findNewSets();
+            const modifiedSets = findModifiedSets();
+
+            for (let set of newSets) {
+                if (!isValidSet(set)) {
+                    return false;
+                }
+            }
+
+            for (let set of modifiedSets) {
+                if (!isValidSet(set)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        function findNewSets() {
+            const newSets = [];
+            let currentSet = [];
+
+            const sortedTiles = selectedTiles.sort((a, b) => {
+                const aIndex = boardTiles.findIndex(bt => bt.tile === a);
+                const bIndex = boardTiles.findIndex(bt => bt.tile === b);
+                return aIndex - bIndex;
+            });
+
+            for (let i = 0; i < sortedTiles.length; i++) {
+                currentSet.push(sortedTiles[i]);
+                
+                if (i === sortedTiles.length - 1 || 
+                    !areAdjacentTiles(sortedTiles[i], sortedTiles[i+1])) {
+                    if (currentSet.length > 0) {
+                        newSets.push(currentSet);
+                        currentSet = [];
+                    }
+                }
+            }
+
+            return newSets;
+        }
+
+        function areAdjacentTiles(tile1, tile2) {
+            const index1 = boardTiles.findIndex(bt => bt.tile === tile1);
+            const index2 = boardTiles.findIndex(bt => bt.tile === tile2);
+            
+            if (index1 === -1 || index2 === -1) return false;
+            
+            const { row: row1, col: col1 } = boardTiles[index1];
+            const { row: row2, col: col2 } = boardTiles[index2];
+            
+            return (row1 === row2 && Math.abs(col1 - col2) === 1) || 
+                   (col1 === col2 && Math.abs(row1 - row2) === 1);
+        }
+
+        function findModifiedSets() {
+            const modifiedSets = [];
+            let currentSet = [];
+
+            for (let i = 0; i < boardTiles.length; i++) {
+                currentSet.push(boardTiles[i].tile);
+                
+                if (i === boardTiles.length - 1 || 
+                    boardTiles[i + 1].row !== boardTiles[i].row || 
+                    boardTiles[i + 1].col !== boardTiles[i].col + 1) {
+                    if (currentSet.some(tile => selectedTiles.includes(tile))) {
+                        modifiedSets.push(currentSet);
+                    }
+                    currentSet = [];
+                }
+            }
+
+            return modifiedSets;
+        }
+
+        function isValidSet(set) {
+            if (set.length < 3) {
+                return false;
+            }
+
+            // Check if it's a group (same number, different colors)
+            if (set.every(tile => tile.number === set[0].number)) {
+                const colors = new Set(set.map(tile => tile.color));
+                return colors.size === set.length;
+            }
+
+            // Check if it's a run (same color, consecutive numbers)
+            if (set.every(tile => tile.color === set[0].color)) {
+                const sortedNumbers = set.map(tile => tile.number).sort((a, b) => a - b);
+                for (let i = 1; i < sortedNumbers.length; i++) {
+                    if (sortedNumbers[i] !== sortedNumbers[i - 1] + 1) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            return false;
+        }
+
+        function placeTilesOnBoard(tiles, player = players[0]) {
+            const tilesToPlace = tiles || selectedTiles;
+            
+            tilesToPlace.forEach(tile => {
+                const emptyCell = findEmptyCell();
+                if (emptyCell) {
+                    if (player === players[0]) {
+                        const tileElement = createTileElement(tile);
+                        tileElement.style.position = 'absolute';
+                        tileElement.style.left = `${emptyCell.col * 42}px`;
+                        tileElement.style.top = `${emptyCell.row * 62}px`;
+                        tileBoard.appendChild(tileElement);
+                    }
+                    boardTiles.push({ tile, row: emptyCell.row, col: emptyCell.col });
+                    
+                    const index = player.tiles.findIndex(t => t === tile);
+                    if (index !== -1) {
+                        player.tiles.splice(index, 1);
+                    }
+                }
+            });
+
+            if (player === players[0]) {
+                selectedTiles = [];
+            }
+            
+            updateBoard();
+            updatePlayerDock();
+        }
+
+        function calculatePoints(tiles) {
+            return tiles.reduce((sum, tile) => sum + tile.number, 0);
+        }
+
+        function findEmptyCell() {
+            const boardSize = 20;
+            for (let row = 0; row < boardSize; row++) {
+                for (let col = 0; col < boardSize; col++) {
+                    if (!boardTiles.some(bt => bt.row === row && bt.col === col)) {
+                        return { row, col };
+                    }
+                }
+            }
+            return null;
+        }
+
+        function updateScore() {
+            players.forEach(player => {
+                player.score = player.tiles.reduce((sum, tile) => sum + tile.number, 0);
+            });
+            updatePlayerBar();
+        }
+
+        function sortTiles() {
+            const currentTime = new Date().getTime();
+            if (currentTime - lastSortTime < SORT_DELAY) {
+                return; // Ignore this click if it's too soon after the last one
+            }
+            lastSortTime = currentTime;
+
+            switch (sortOrder) {
+                case 'color':
+                    players[0].tiles.sort((a, b) => {
+                        if (a.color !== b.color) return colors.indexOf(a.color) - colors.indexOf(b.color);
+                        return a.number - b.number;
+                    });
+                    sortOrder = 'number';
+                    sortButton.textContent = '📘';
+                    break;
+                case 'number':
+                    players[0].tiles.sort((a, b) => {
+                        if (a.number !== b.number) return a.number - b.number;
+                        return colors.indexOf(a.color) - colors.indexOf(b.color);
+                    });
+                    sortOrder = 'smart';
+                    sortButton.textContent = '📙';
+                    break;
+                case 'smart':
+                    smartSort();
+                    sortOrder = 'color';
+                    sortButton.textContent = '📗';
+                    break;
+            }
+            updatePlayerDock();
+        }
+
+        function smartSort() {
+            const originalTiles = [...players[0].tiles];
+            const groups = {};
+            const runs = {};
+            const leftovers = [];
+
+            colors.forEach(color => runs[color] = []);
+
+            players[0].tiles.forEach(tile => {
+                if (tile.color === 'joker') {
+                    leftovers.push(tile);
+                } else {
+                    if (groups[tile.number]) {
+                        groups[tile.number].push(tile);
+                    } else {
+                        groups[tile.number] = [tile];
+                    }
+                    runs[tile.color].push(tile);
+                }
+            });
+
+            Object.values(runs).forEach(run => run.sort((a, b) => a.number - b.number));
+
+            const validSets = [];
+            Object.values(groups).forEach(group => {
+                if (group.length >= 3) validSets.push(group);
+            });
+
+            Object.values(runs).forEach(run => {
+                let currentRun = [run[0]];
+                for (let i = 1; i < run.length; i++) {
+                    if (run[i].number === currentRun[currentRun.length - 1].number + 1) {
+                        currentRun.push(run[i]);
+                    } else {
+                        if (currentRun.length >= 3) validSets.push(currentRun);
+                        currentRun = [run[i]];
+                    }
+                }
+                if (currentRun.length >= 3) validSets.push(currentRun);
+            });
+
+            validSets.sort((a, b) => b.length - a.length);
+
+            const sortedTiles = validSets.flat();
+
+            originalTiles.forEach(tile => {
+                if (!sortedTiles.includes(tile) && !leftovers.includes(tile)) {
+                    leftovers.push(tile);
+                }
+            });
+
+            players[0].tiles = sortedTiles.concat(leftovers);
+
+            if (players[0].tiles.length !== originalTiles.length) {
+                console.error("Tile count mismatch after sorting. Reverting to original order.");
+                players[0].tiles = originalTiles;
+            }
+        }
+
+        let sortButtonPressTimer;
+
+        sortButton.addEventListener('mousedown', function() {
+            sortButtonPressTimer = setTimeout(changeSortEmoji, 1000);
+        });
+
+        sortButton.addEventListener('mouseup', function() {
+            clearTimeout(sortButtonPressTimer);
+        });
+
+        sortButton.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            sortButtonPressTimer = setTimeout(changeSortEmoji, 1000);
+        });
+
+        sortButton.addEventListener('touchend', function(e) {
+            e.preventDefault();
+            clearTimeout(sortButtonPressTimer);
+            if (e.cancelable) {
+                e.preventDefault();
+            }
+            sortTiles();
+        });
+
+        function changeSortEmoji() {
+            switch (sortButton.textContent) {
+                case '📗':
+                    sortButton.textContent = '📘';
+                    sortOrder = 'number';
+                    break;
+                case '📘':
+                    sortButton.textContent = '📙';
+                    sortOrder = 'smart';
+                    break;
+                case '📙':
+                    sortButton.textContent = '📗';
+                    sortOrder = 'color';
+                    break;
+            }
+        }
+
+        function updateTileSetPreview() {
+            currentTileSet = document.querySelector('input[name="tileSet"]:checked').value;
+            tileSetPreview.innerHTML = '';
+            const previewTiles = [
+                { color: 'red', number: 7 },
+                { color: 'blue', number: 8 },
+                { color: 'black', number: 9 },
+                { color: 'orange', number: 10 }
+            ];
+            previewTiles.forEach(tile => {
+                const tileElement = createTileElement(tile);
+                tileSetPreview.appendChild(tileElement);
+            });
+        }
+
+        updateTileSetPreview();
+
+    </script>
+</body>
+</html>
